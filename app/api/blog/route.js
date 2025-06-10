@@ -266,49 +266,106 @@ export async function PUT(request) {
 
 
 //  image upload helper with validation
+// async function handleImageUpload(image) {
+//     if (!image) {
+//         throw new Error("Image is required");
+//     }
+
+//     // File type validation
+//     if (!ALLOWED_FILE_TYPES.includes(image.type)) {
+//         throw new Error("Invalid file type. Only JPEG, PNG, WebP and GIF are allowed");
+//     }
+
+//     // File size validation
+//     if (image.size > MAX_FILE_SIZE) {
+//         throw new Error("File size too large. Maximum size is 10MB");
+//     }
+
+//     const filename = `${Date.now()}_${image.name}`;
+//     const fullPath = `${UPLOAD_DIR}/${filename}`;
+//     const publicPath = `${UPLOAD_PATH_PUBLIC}/${filename}`;
+
+//     try {
+//         const imageBuffer = Buffer.from(await image.arrayBuffer());
+//         await writeFile(fullPath, imageBuffer);
+//         return publicPath;
+//     } catch (error) {
+//         console.error("Error uploading image:", error);
+//         throw new Error("Failed to upload image");
+//     }
+// }
+
 async function handleImageUpload(image) {
-    if (!image) {
-        throw new Error("Image is required");
-    }
+    if (!image) throw new Error("Image is required");
 
-    // File type validation
     if (!ALLOWED_FILE_TYPES.includes(image.type)) {
-        throw new Error("Invalid file type. Only JPEG, PNG, WebP and GIF are allowed");
+        throw new Error("Invalid file type. Only JPEG, PNG, WebP allowed");
     }
 
-    // File size validation
     if (image.size > MAX_FILE_SIZE) {
-        throw new Error("File size too large. Maximum size is 10MB");
+        throw new Error("File size too large. Max 10MB");
     }
 
-    const filename = `${Date.now()}_${image.name}`;
-    const fullPath = `${UPLOAD_DIR}/${filename}`;
-    const publicPath = `${UPLOAD_PATH_PUBLIC}/${filename}`;
+    const buffer = Buffer.from(await image.arrayBuffer());
 
     try {
-        const imageBuffer = Buffer.from(await image.arrayBuffer());
-        await writeFile(fullPath, imageBuffer);
-        return publicPath;
+        const result = await new Promise((resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+                {
+                    folder: "blog_uploads",
+                    resource_type: "image"
+                },
+                (error, result) => {
+                    if (error) return reject(error);
+                    resolve(result);
+                }
+            );
+
+            uploadStream.end(buffer);
+        });
+
+        return result.secure_url;
+
     } catch (error) {
-        console.error("Error uploading image:", error);
-        throw new Error("Failed to upload image");
+        console.error("Cloudinary upload error:", error);
+        throw new Error("Failed to upload image to Cloudinary");
     }
 }
+
 
 // Helper function to delete image
-async function deleteImage(imagePath) {
-    if (!imagePath) return;
+// async function deleteImage(imagePath) {
+//     if (!imagePath) return;
+
+//     try {
+//         const fullPath = `./public${imagePath}`;
+//         if (fs.existsSync(fullPath)) {
+//             await fs.promises.unlink(fullPath);
+//         }
+//     } catch (error) {
+//         console.error("Error deleting image file:", error);
+//     }
+// }
+
+async function deleteImage(imageUrl) {
+    if (!imageUrl) return;
 
     try {
-        const fullPath = `./public${imagePath}`;
-        if (fs.existsSync(fullPath)) {
-            await fs.promises.unlink(fullPath);
-        }
+        const publicId = getPublicIdFromUrl(imageUrl);
+        await cloudinary.uploader.destroy(publicId);
     } catch (error) {
-        console.error("Error deleting image file:", error);
-        // Don't throw error as this is not critical
+        console.error("Cloudinary delete error:", error);
     }
 }
+
+// Helper: Extract Cloudinary public_id from secure_url
+function getPublicIdFromUrl(url) {
+    const parts = url.split('/');
+    const filename = parts.pop().split('.')[0];
+    const folder = parts.slice(-1)[0] === 'blog_uploads' ? 'blog_uploads/' : '';
+    return folder + filename;
+}
+
 
 // Helper function to create blog data object
 function createBlogData(formData, imageUrl) {
