@@ -1,20 +1,20 @@
 import { connectDB } from "@/lib/config/db";
 import BlogModel from "@/lib/models/BlogModel";
 import ViewTracker from "@/lib/models/ViewTracker";
-import { writeFile } from 'fs/promises';
+// import { writeFile } from 'fs/promises';
 import { NextResponse } from "next/server";
-import fs from 'fs';
+// import fs from 'fs';
 import mongoose from 'mongoose';
 import { auth } from "@/auth";
 
-const UPLOAD_DIR = './public/uploads';
-const UPLOAD_PATH_PUBLIC = '/uploads';
+// const UPLOAD_DIR = './public/uploads';
+// const UPLOAD_PATH_PUBLIC = '/uploads';
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
 const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-if (!fs.existsSync(UPLOAD_DIR)) {
-    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-}
+// if (!fs.existsSync(UPLOAD_DIR)) {
+//     fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+// }
 
 export async function GET(request) {
     try {
