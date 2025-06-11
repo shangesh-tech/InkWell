@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 // import fs from 'fs';
 import mongoose from 'mongoose';
 import { auth } from "@/auth";
+import cloudinary from "@/lib/cloudinary";
 
 // const UPLOAD_DIR = './public/uploads';
 // const UPLOAD_PATH_PUBLIC = '/uploads';
@@ -51,37 +52,43 @@ export async function GET(request) {
                 const session = await auth();
                 const userId = session?.user?.id || null;
 
-                // Try to create a new view record
-                const viewTracker = new ViewTracker({
+                // Check if this view already exists before trying to create it
+                const existingView = await ViewTracker.findOne({
                     blogId,
                     ipAddress,
-                    timestamp: now,
                     userId
                 });
 
-                await viewTracker.save();
+                if (!existingView) {
+                    // Only create a new view if one doesn't exist
+                    const viewTracker = new ViewTracker({
+                        blogId,
+                        ipAddress,
+                        timestamp: now,
+                        userId
+                    });
 
-                // If save was successful (no duplicate), increment the view count
-                blog = await BlogModel.findByIdAndUpdate(
-                    blogId,
-                    {
-                        $inc: { views: 1 },
-                        $push: {
-                            viewsHistory: {
-                                date: now,
-                                count: 1
+                    await viewTracker.save();
+
+                    // Increment view count only for new views
+                    blog = await BlogModel.findByIdAndUpdate(
+                        blogId,
+                        {
+                            $inc: { views: 1 },
+                            $push: {
+                                viewsHistory: {
+                                    date: now,
+                                    count: 1
+                                }
                             }
-                        }
-                    },
-                    { new: true }
-                ).lean();
-
+                        },
+                        { new: true }
+                    ).lean();
+                }
             } catch (error) {
-                console.error(error);
                 if (error.code !== 11000) {
                     console.error("Error tracking view:", error);
                 }
-
             }
 
             return NextResponse.json({
