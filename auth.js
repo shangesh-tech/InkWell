@@ -70,6 +70,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
     pages: {
         signIn: "/login",
+        signOut: "/",
     },
 
     session: {
@@ -147,6 +148,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             }
 
             return false;
+        }
+    },
+
+    // Ensure correct URLs in production
+    useSecureCookies: process.env.NODE_ENV === "production",
+    cookies: {
+        sessionToken: {
+            name: `__Secure-next-auth.session-token`,
+            options: {
+                httpOnly: true,
+                sameSite: "lax",
+                path: "/",
+                secure: process.env.NODE_ENV === "production",
+            },
         },
     },
 });
