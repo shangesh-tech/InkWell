@@ -2,6 +2,8 @@
 
 A full-featured blog platform built with Next.js, featuring a rich text editor, user authentication, analytics dashboard, and newsletter subscription system.
 
+Deployed Link : https://inkwell-gilt.vercel.app
+
 ## 🚀 Features
 
 ### Core Features
